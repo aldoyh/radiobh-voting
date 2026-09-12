@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تصويت الجمهور • Radio Bahrain Live Vote</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Noto+Sans+Arabic:wght@400;500;600&amp;display=swap');
+    
+    :root {
+      --bahrain-red: #C8102E;
+      --gold: #D4AF37;
+    }
+    
+    body {
+      font-family: 'Inter', 'Noto Sans Arabic', system-ui, sans-serif;
+    }
+    
+    .radio-gradient {
+      background: linear-gradient(135deg, #0F172A 0%, #1E1135 100%);
+    }
+    
+    .bahrain-red {
+      color: #C8102E;
+    }
+    
+    .gold-accent {
+      color: #D4AF37;
+    }
+    
+    .song-card {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    
+    .song-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(212, 175, 55, 0.3);
+      box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    }
+    
+    .song-card.selected {
+      border-color: #D4AF37;
+      background: rgba(212, 175, 55, 0.08);
+      box-shadow: 0 0 0 1px #D4AF37;
+    }
+    
+    .vote-btn {
+      transition: all 0.15s ease;
+    }
+    
+    .vote-btn:active {
+      transform: scale(0.985);
+    }
+    
+    .result-bar {
+      transition: width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      background: linear-gradient(90deg, #C8102E, #D4AF37);
+    }
+    
+    .section-header {
+      font-size: 1.1rem;
+      letter-spacing: -.025em;
+    }
+    
+    .live-dot {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .3; }
+    }
+    
+    .stat-number {
+      font-variant-numeric: tabular-nums;
+    }
+    
+    .song-title {
+      font-weight: 600;
+      line-height: 1.1;
+    }
+    
+    .glass {
+      background: rgba(255,255,255,0.03);
+      backdrop-filter: blur(20px);
+    }
+    
+    .radio-header {
+      background: linear-gradient(to right, #0F172A, #1E1135);
+      border-bottom: 1px solid rgba(212,175,55,0.15);
+    }
+    
+    .modern-shadow {
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.2),
+                  0 4px 6px -4px rgb(0 0 0 / 0.2);
+    }
+    
+    .vote-success {
+      animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    
+    .confetti {
+      position: fixed;
+      width: 8px;
+      height: 8px;
+      z-index: 9999;
+      pointer-events: none;
+      animation: confetti-fall 1.8s ease-out forwards;
+    }
+    
+    @keyframes popIn {
+      0% { transform: scale(0.8); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    
+    .result-row {
+      transition: all 0.3s ease;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-200">
+  <!-- Top Navigation / Brand -->
+  <nav class="border-b border-white/10 bg-slate-950/95 backdrop-blur-lg sticky top-0 z-50">
+    <div class="max-w-4xl mx-auto px-5 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-x-3">
+        <div class="flex items-center justify-center w-10 h-10 rounded-2xl bg-gradient-to-br from-red-600 to-red-800 shadow-inner">
+          <i class="fa-solid fa-broadcast-tower text-white text-2xl"></i>
+        </div>
+        <div>
+          <div class="font-semibold tracking-tight text-xl">Radio Bahrain</div>
+          <div class="text-[10px] text-red-500/80 -mt-1 font-medium tracking-[1px]">إذاعة البحرين</div>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-x-2 text-sm">
+        <div class="flex items-center gap-x-1.5 px-3 py-1.5 rounded-3xl bg-white/5 border border-white/10">
+          <div class="w-2 h-2 rounded-full bg-emerald-400 live-dot"></div>
+          <span class="font-medium text-emerald-400 text-xs tracking-wide">LIVE</span>
+        </div>
+        <div id="total-votes-nav" 
+             class="font-mono text-xs px-3 py-1.5 rounded-3xl bg-white/5 border border-white/10 text-slate-400">
+          — votes
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-4xl mx-auto px-5 pt-8 pb-20">
+    
+    <!-- Hero -->
+    <div class="text-center mb-9">
+      <div class="inline-flex items-center gap-2 px-4 py-1 rounded-3xl bg-white/5 border border-white/10 text-xs tracking-[1.5px] mb-4">
+        <i class="fa-solid fa-broadcast-tower text-red-500"></i>
+        <span class="font-semibold">ON AIR • LIVE VOTING</span>
+      </div>
+      
+      <h1 class="text-5xl sm:text-6xl font-semibold tracking-tighter mb-2">Cast Your Vote</h1>
+      <p class="text-xl text-slate-400 max-w-md mx-auto">Which song should we play next on air?</p>
+      <p class="text-sm text-red-400/70 mt-1 font-medium">صوّت الآن للأغنية القادمة</p>
+    </div>
+
+    <!-- Status Banner -->
+    <div id="status-banner" 
+         class="glass border border-white/10 rounded-3xl px-5 py-3 mb-8 flex items-center justify-between text-sm hidden">
+      <div class="flex items-center gap-x-2">
+        <i class="fa-solid fa-info-circle text-amber-400"></i>
+        <span id="status-text" class="font-medium"></span>
+      </div>
+    </div>
+
+    <!-- Voting Section -->
+    <div id="voting-section">
+      <div class="flex items-end justify-between mb-4 px-1">
+        <div>
+          <div class="section-header font-semibold flex items-center gap-x-2">
+            <span>Choose Your Song</span>
+            <span class="text-xs font-normal px-2 py-px rounded bg-white/10 text-slate-400">اختر أغنية</span>
+          </div>
+        </div>
+        <div class="text-xs text-slate-500 hidden sm:block">One vote per listener</div>
+      </div>
+
+      <!-- Songs Grid -->
+      <div id="songs-grid" 
+           class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <!-- Populated by JS -->
+      </div>
+      
+      <div class="mt-3 text-center">
+        <button onclick="submitVote()" 
+                id="vote-button"
+                disabled
+                class="vote-btn w-full sm:w-auto mt-2 px-14 py-4 rounded-3xl bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 disabled:from-slate-700 disabled:to-slate-700 disabled:text-slate-400 font-semibold text-lg shadow-xl active:scale-[0.985] transition disabled:cursor-not-allowed flex items-center justify-center gap-x-3 mx-auto">
+          <i class="fa-solid fa-check-to-slot"></i>
+          <span>SUBMIT MY VOTE</span>
+        </button>
+        <p class="text-[11px] text-slate-500 mt-2.5">Your vote is final • Secured by IP + device session</p>
+      </div>
+    </div>
+
+    <!-- Voted State -->
+    <div id="voted-state" class="hidden">
+      <div class="glass border border-emerald-500/30 rounded-3xl p-7 text-center modern-shadow">
+        <div class="mx-auto w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
+          <i class="fa-solid fa-check text-emerald-400 text-4xl"></i>
+        </div>
+        <h3 class="text-2xl font-semibold tracking-tight mb-1">Thank you for voting!</h3>
+        <p id="voted-song" class="text-lg text-emerald-400 font-medium mb-1"></p>
+        <p class="text-sm text-slate-400">Your vote has been recorded and is now live in the results.</p>
+        
+        <div class="my-5 h-px bg-white/10"></div>
+        
+        <button onclick="document.getElementById('results-container').scrollIntoView({behavior:'smooth'})" 
+                class="text-sm px-6 py-2.5 rounded-3xl border border-white/20 hover:bg-white/5 transition flex items-center gap-x-2 mx-auto">
+          <i class="fa-solid fa-sync text-xs"></i>
+          <span>See live results below</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Live Results -->
+    <div class="mt-10">
+      <div class="flex items-center justify-between mb-4 px-1">
+        <div class="section-header font-semibold flex items-center gap-x-2">
+          <span>Live Results</span>
+          <span class="text-xs px-2 py-px rounded bg-emerald-400/10 text-emerald-400 font-normal">UPDATED LIVE</span>
+        </div>
+        <div id="live-indicator" class="flex items-center gap-x-1.5 text-xs text-emerald-400">
+          <i class="fa-solid fa-circle fa-beat text-[8px]"></i>
+          <span class="font-medium">LIVE</span>
+        </div>
+      </div>
+      
+      <div id="results-container" 
+           class="glass border border-white/10 rounded-3xl p-2 divide-y divide-white/10">
+        <!-- Populated dynamically by JS -->
+        <div class="px-5 py-6 text-center text-sm text-slate-400">
+          Results will appear here as votes come in...
+        </div>
+      </div>
+      
+      <div class="flex justify-center mt-4">
+        <div class="text-xs text-slate-500 flex items-center gap-2">
+          <i class="fa-solid fa-users"></i> 
+          <span id="total-votes">0 votes cast</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/10 py-6 text-center text-xs text-slate-500">
+    <div class="max-w-4xl mx-auto px-5">
+      Radio Bahrain • إذاعة البحرين &nbsp;•&nbsp; Official Audience Voting Platform
+    </div>
+  </footer>
+
+  <script>
+    // Tailwind script
+    function initTailwind() {
+      document.documentElement.style.setProperty('--accent', '#D4AF37');
+    }
+    
+    let songs = [];
+    let selectedSongId = null;
+    let hasVoted = false;
+    let votedSongId = null;
+    let eventSource = null;
+
+    function connectLiveUpdates() {
+      if (eventSource) eventSource.close();
+      
+      eventSource = new EventSource('/api/events');
+      
+      eventSource.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data);
+          if (msg.type === 'results') {
+            renderResults(msg.data.results, msg.data.stats.totalVotes);
+          }
+        } catch (err) {}
+      };
+      
+      eventSource.onerror = () => {
+        // Fall back to polling if SSE fails
+        setTimeout(() => {
+          if (!eventSource || eventSource.readyState === 2) {
+            pollResults();
+          }
+        }, 4000);
+      };
+    }
+
+    async function pollResults() {
+      try {
+        const res = await fetch('/api/results');
+        const data = await res.json();
+        renderResults(data.results, data.stats.totalVotes);
+      } catch (e) {}
+    }
+
+    async function loadSongs() {
+      const res = await fetch('/api/songs');
+      const data = await res.json();
+      songs = data.songs || [];
+      
+      const grid = document.getElementById('songs-grid');
+      grid.innerHTML = '';
+      
+      if (songs.length === 0) {
+        grid.innerHTML = `<div class="col-span-2 text-center py-8 text-slate-400">No songs available right now.</div>`;
+        return;
+      }
+      
+      songs.forEach(song => {
+        const card = document.createElement('div');
+        card.className = `song-card group flex items-center gap-4 px-5 py-4 rounded-3xl bg-slate-900 cursor-pointer hover:bg-slate-800/80`;
+        card.innerHTML = `
+          <div class="flex-1 min-w-0">
+            <div class="song-title text-[17px] text-white pr-2">${escapeHtml(song.title)}</div>
+            ${song.artist ? `<div class="text-xs text-slate-400 mt-px">${escapeHtml(song.artist)}</div>` : ''}
+          </div>
+          <div>
+            <div class="w-9 h-9 rounded-2xl border border-white/10 flex items-center justify-center text-xs group-hover:border-amber-400/40 transition">
+              <i class="fa-solid fa-play text-xs text-white/40 group-hover:text-amber-400/70"></i>
+            </div>
+          </div>
+        `;
+        
+        card.onclick = () => selectSong(song.id, card);
+        grid.appendChild(card);
+      });
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    function selectSong(id, element) {
+      // Deselect others
+      document.querySelectorAll('#songs-grid .song-card').forEach(el => {
+        el.classList.remove('selected');
+        el.style.borderColor = '';
+      });
+      
+      // Select this
+      element.classList.add('selected');
+      element.style.borderColor = '#D4AF37';
+      
+      selectedSongId = id;
+      document.getElementById('vote-button').disabled = false;
+    }
+
+    async function submitVote() {
+      if (!selectedSongId) return;
+      
+      const btn = document.getElementById('vote-button');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> RECORDING VOTE...`;
+      
+      try {
+        const res = await fetch('/api/vote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ songId: selectedSongId })
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+          throw new Error(data.error || 'Vote failed');
+        }
+        
+        // Success!
+        hasVoted = true;
+        votedSongId = selectedSongId;
+        
+        // Persist vote choice for nice UX on reload
+        try { localStorage.setItem('rbh_voted_song_id', String(votedSongId)); } catch (e) {}
+        
+        // Hide voting UI
+        document.getElementById('voting-section').classList.add('hidden');
+        
+        // Show success state
+        const votedState = document.getElementById('voted-state');
+        votedState.classList.remove('hidden');
+        votedState.classList.add('vote-success');
+        
+        const song = songs.find(s => s.id === votedSongId);
+        document.getElementById('voted-song').innerHTML = 
+          `You voted for <span class="font-semibold">${escapeHtml(song?.title || 'this song')}</span>`;
+        
+        // Show confetti
+        launchConfetti();
+        
+        // Render latest results immediately
+        if (data.results) {
+          renderResults(data.results, data.stats?.totalVotes || 0);
+        }
+        
+        // Update nav count
+        updateNavVoteCount(data.stats?.totalVotes);
+        
+      } catch (err) {
+        alert(err.message || 'Failed to submit vote. Please try again.');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    }
+
+    function launchConfetti() {
+      const colors = ['#C8102E', '#D4AF37', '#fff'];
+      for (let i = 0; i < 42; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti';
+        piece.style.left = Math.random() * 100 + 'vw';
+        piece.style.top = '-10px';
+        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.opacity = Math.random() * 0.85 + 0.3;
+        piece.style.transform = `rotate(${Math.random() * 360}deg)`;
+        piece.style.animationDuration = (Math.random() * 1.2 + 1.6) + 's';
+        document.body.appendChild(piece);
+        
+        setTimeout(() => piece.remove(), 2600);
+      }
+    }
+
+    function updateNavVoteCount(total) {
+      const el = document.getElementById('total-votes-nav');
+      if (total > 0) {
+        el.textContent = `${total.toLocaleString()} votes`;
+      }
+    }
+
+    function renderResults(results, totalVotes) {
+      const container = document.getElementById('results-container');
+      const totalEl = document.getElementById('total-votes');
+      
+      totalEl.textContent = `${(totalVotes || 0).toLocaleString()} votes cast`;
+      document.getElementById('total-votes-nav').textContent = totalVotes > 0 ? `${totalVotes.toLocaleString()} votes` : '— votes';
+      
+      if (!results || results.length === 0) {
+        container.innerHTML = `<div class="px-5 py-7 text-center text-sm text-slate-400">Waiting for the first votes...</div>`;
+        return;
+      }
+      
+      container.innerHTML = '';
+      
+      results.forEach((r, index) => {
+        const isWinner = index === 0 && r.votes > 0;
+        const isMyVote = (votedSongId && r.id === votedSongId);
+        const div = document.createElement('div');
+        
+        let classes = `result-row px-5 py-[17px] flex flex-col gap-y-2.5`;
+        if (isWinner) classes += ` bg-white/5 rounded-3xl my-0.5`;
+        if (isMyVote) classes += ` ring-1 ring-inset ring-emerald-400/60 bg-emerald-950/20 rounded-3xl`;
+        
+        div.className = classes;
+        
+        div.innerHTML = `
+          <div class="flex items-center justify-between text-sm">
+            <div class="flex items-center gap-x-3 min-w-0 flex-1">
+              ${isWinner ? `<i class="fa-solid fa-trophy text-amber-400"></i>` : `<span class="w-4 text-center text-xs text-slate-400 font-mono">${index + 1}</span>`}
+              <div class="font-medium truncate pr-3">${escapeHtml(r.title)}</div>
+              ${r.artist ? `<div class="text-xs text-slate-400 hidden sm:block truncate">${escapeHtml(r.artist)}</div>` : ''}
+              ${isMyVote ? `<span class="ml-1 px-2 py-px text-[10px] font-semibold tracking-wider bg-emerald-400 text-emerald-950 rounded">YOU</span>` : ''}
+            </div>
+            <div class="flex items-baseline gap-x-2 font-semibold tabular-nums shrink-0">
+              <span class="text-xl">${r.votes}</span>
+              <span class="text-xs text-slate-400">(${r.percent}%)</span>
+            </div>
+          </div>
+          <div class="h-2.5 bg-white/10 rounded-3xl overflow-hidden">
+            <div class="result-bar h-full rounded-3xl" 
+                 style="width: ${Math.max(r.percent, 4)}%"></div>
+          </div>
+        `;
+        
+        container.appendChild(div);
+      });
+    }
+
+    async function loadInitialResults() {
+      try {
+        const res = await fetch('/api/results');
+        const data = await res.json();
+        renderResults(data.results, data.stats.totalVotes);
+      } catch (e) {
+        console.warn('Could not load initial results');
+      }
+    }
+
+    function resetForNewVoteView() {
+      // Just scroll user to results and keep the thank you message visible
+      document.getElementById('voted-state').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    async function checkIfAlreadyVoted() {
+      // Restore previous vote choice from localStorage for better UX across refreshes
+      const stored = localStorage.getItem('rbh_voted_song_id');
+      if (stored) {
+        votedSongId = parseInt(stored, 10);
+        hasVoted = true;
+
+        // If the voting section is still visible, switch to the "thank you" view
+        const votingSection = document.getElementById('voting-section');
+        const votedState = document.getElementById('voted-state');
+
+        if (!votingSection.classList.contains('hidden')) {
+          votingSection.classList.add('hidden');
+          votedState.classList.remove('hidden');
+
+          const song = songs.find(s => s.id === votedSongId);
+          if (song) {
+            document.getElementById('voted-song').innerHTML = 
+              `You voted for <span class="font-semibold">${escapeHtml(song.title)}</span>`;
+          }
+        }
+      }
+    }
+
+    // Keyboard support
+    function setupKeyboard() {
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && selectedSongId && !document.getElementById('vote-button').disabled) {
+          submitVote();
+        }
+      });
+    }
+
+    async function init() {
+      initTailwind();
+      
+      await loadSongs();
+      await loadInitialResults();
+      connectLiveUpdates();
+      setupKeyboard();
+      
+      // Check for previous vote after songs are loaded (for "you voted for X" banner)
+      await checkIfAlreadyVoted();
+      
+      // Gentle polling backup every 12s (in case SSE drops silently)
+      setInterval(() => {
+        if (!eventSource || eventSource.readyState === 2) {
+          pollResults();
+        }
+      }, 12000);
+      
+      console.log('%c[RadioBahrain] Voting client ready', 'color:#475569');
+    }
+
+    // Boot
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
